@@ -24,12 +24,12 @@ except Exception as e:
 
 # Configure the canvas parameters
 canvas_result = st_canvas(
-    fill_color="rgba(255, 255, 255, 1)",  # Transparent/white fill
-    stroke_width=14,
+    fill_color="rgba(0, 0, 0, 1)",  # Match black background — prevents white fill inside closed strokes
+    stroke_width=8,
     stroke_color="#FFFFFF",
     background_color="#000000",
-    height=350,
-    width=1000,
+    height=300,
+    width=700,
     drawing_mode="freedraw",
     key="canvas",
 )

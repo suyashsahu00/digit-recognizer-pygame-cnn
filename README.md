@@ -1,84 +1,79 @@
 # ✍️ Handwritten Digit Recognizer (CNN + Live Drawing Canvas)
 
-A deep learning project that trains a Convolutional Neural Network on the MNIST dataset and lets you **draw a digit and get an instant prediction**, with two different interfaces to try it: a desktop Pygame app and a browser-based Streamlit app.
+A deep learning project that trains a **Convolutional Neural Network on MNIST** and lets you draw a digit and get an instant prediction — available in two interfaces: a desktop Pygame app and a browser-based Streamlit app.
 
-> **Scope note:** this project recognizes single handwritten **digits (0–9)**, not general text/characters — think of it as a live MNIST classifier, not a full OCR engine.
+> **Scope:** Recognizes single handwritten **digits (0–9)** drawn one at a time. This is a live MNIST classifier, not a full OCR engine.
+
+🌐 **Live Demo:** [digit-recognizer-pygame-cnn.streamlit.app](https://digit-recognizer-pygame-cnn.streamlit.app/)
 
 ---
 
 ## 🎥 Demo
 
-Add a few screenshots of both interfaces in action below, and/or link a short demo video (e.g. uploaded to YouTube) to show the live drawing + prediction working.
-
 ![demo](assets/demo-screenshot.png)
-
-📺 **Demo video:** *(add your YouTube link here)*
-
-> Note: the Streamlit app isn't deployed to a public URL yet — run it locally with the instructions below. (Streamlit Community Cloud is free and would let you add a "try it live in your browser" link here if you deploy it later.)
 
 ---
 
 ## 🧠 How It Works
 
-The project is split into two parts:
+### 1. Model Training (`MNIST.ipynb`)
 
-### 1. Model Training (Jupyter Notebook)
+- **Dataset:** `keras.datasets.mnist` — 60,000 training images + 10,000 test images, 28×28 grayscale
+- **Preprocessing:** Normalized to `[0,1]`, channel axis added, labels one-hot encoded
+- **Architecture:**
 
-- **Dataset:** `keras.datasets.mnist` — 60,000 training images + 10,000 test images, each 28×28 grayscale.
-- **Preprocessing:**
+  | Layer        | Details                                               |
+  | ------------ | ----------------------------------------------------- |
+  | Conv2D       | 32 filters, 3×3 kernel, ReLU, input (28, 28, 1)      |
+  | MaxPooling2D | 2×2                                                   |
+  | Conv2D       | 64 filters, 3×3 kernel, ReLU                          |
+  | MaxPooling2D | 2×2                                                   |
+  | Flatten      | —                                                     |
+  | Dropout      | 0.25                                                  |
+  | Dense        | 10 units, Softmax                                     |
 
-  - Normalized pixel values to `[0, 1]` (divide by 255)
-  - Expanded dimensions from `(28, 28)` → `(28, 28, 1)` to add the channel axis required by Conv2D
-  - One-hot encoded labels using `keras.utils.to_categorical`
-- **Architecture (Sequential CNN):**
+- **Optimizer:** Adam · **Loss:** Categorical cross-entropy
+- **Callbacks:** `EarlyStopping` (patience=4, monitors val_accuracy) + `ModelCheckpoint` (saves best as `bestmodel.h5`)
+- **Result:** **99.13% test accuracy**, 0.0513 test loss
 
-  | Layer        | Details                                              |
-  | ------------ | ---------------------------------------------------- |
-  | Conv2D       | 32 filters, kernel 3×3, ReLU, input shape (28,28,1) |
-  | MaxPooling2D | pool size 2×2                                       |
-  | Conv2D       | 64 filters, kernel 3×3, ReLU                        |
-  | MaxPooling2D | pool size 2×2                                       |
-  | Flatten      | —                                                   |
-  | Dropout      | 0.25 (prevents overfitting)                          |
-  | Dense        | 10 units, Softmax (output layer)                     |
+---
 
-  **Total params: 34,826 (136 KB)** — small enough to load instantly, no GPU required for inference.
-- **Compilation:** Adam optimizer, categorical cross-entropy loss, accuracy metric
-- **Callbacks:** `EarlyStopping` (monitors `val_accuracy`, `min_delta=0.01`, patience = 4) and `ModelCheckpoint` (saves best model as `bestmodel.h5`, `save_best_only=True`)
-- **Training:** up to 50 epochs, 30% validation split
-- **Result:** **99.13% test accuracy**, **0.0513 test loss** on the held-out MNIST test set
+### 2. Pygame Desktop App (`app.py`)
 
-### 2. Real-Time Inference (Pygame App)
-
-- Opens a 640×480 drawing canvas
-- Tracks mouse motion to draw strokes in white on black
-- On mouse-release, computes a bounding box (with 5px padding) around the drawn stroke
-- Extracts that region as a pixel array, **thresholds it to pure binary (0/255)**, pads it, resizes to 28×28, and normalizes it
-- Feeds it into the trained `.h5` model (loaded relative to the script's own directory, so it works regardless of your working directory) → `argmax` on the softmax output → predicted digit
-- Displays the prediction as a **word label** (e.g. "Five", not "5") next to the drawing
+- Opens a **640×480** black drawing canvas
+- Draw a digit with your mouse (left-click and drag)
+- On **mouse release**, the app:
+  - Computes a bounding box around the stroke
+  - Pads the crop to a **square** (preserving aspect ratio)
+  - Adds a border margin, resizes to **28×28**, normalizes
+  - Feeds into the CNN → shows the predicted word label (e.g. "Seven") in red, next to your drawing
 - Press **`N`** to clear the canvas and draw the next digit
-- `IMAGESAVE` (save each drawn digit as a PNG) and `PREDICT` (run inference) are flags at the top of `app.py` — toggle them in code if you want to collect your own dataset instead of predicting live
 
-### 3. Browser Alternative (Streamlit App)
+### 3. Streamlit Browser App (`streamlit_app.py`)
 
-A second, browser-based interface using `streamlit-drawable-canvas` — no Pygame window required, runs in any browser via `streamlit run`.
-
-- 280×280 freedraw canvas, white strokes on black, 14px stroke width
-- On each redraw, crops to the drawing's bounding box (15px padding), resizes to 28×28, pads, resizes again, and normalizes — matching the same preprocessing pipeline as the training data
-- Displays the **predicted digit and its confidence percentage**
-- Sidebar shows the exact 28×28 image the model sees, for a sanity check on preprocessing
-- Model is cached with `@st.cache_resource` so it only loads once per session, not on every redraw
+- Wide-layout browser interface, no installation of Pygame required
+- **900×300** freedraw canvas (white strokes, black background)
+- On each draw, the app:
+  - Crops to the bounding box of drawn pixels (15px padding)
+  - Pads the crop to a **square** before resizing to 28×28
+  - Normalizes and feeds into the CNN
+  - Shows the **predicted digit (large) and confidence %** in a side panel
+- Click **🗑️ Clear Canvas** before drawing the next digit — the model only works correctly on one digit at a time
+- Model is cached with `@st.cache_resource` (loads once per session)
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Python 3.x**
-- **TensorFlow / Keras** — model building & training
-- **NumPy, Matplotlib** — data handling & visualization
-- **Pygame** — desktop interactive drawing canvas
-- **Streamlit + streamlit-drawable-canvas** — browser-based interactive drawing canvas
-- **OpenCV (cv2)** — image resizing/preprocessing during inference
+| Library | Role |
+|---|---|
+| Python 3.11 | Runtime |
+| TensorFlow / Keras | Model training & inference |
+| NumPy | Array manipulation |
+| OpenCV (`cv2`) | Image resizing & preprocessing |
+| Pygame | Desktop drawing canvas |
+| Streamlit | Browser-based web app |
+| streamlit-drawable-canvas | Interactive drawing widget |
 
 ---
 
@@ -86,47 +81,66 @@ A second, browser-based interface using `streamlit-drawable-canvas` — no Pygam
 
 ```
 digit-recognizer-pygame-cnn/
-├── MNIST.ipynb                # Notebook: data prep, CNN, training
-├── app.py                     # Desktop app (Pygame): draw + real-time prediction
-├── streamlit_app.py           # Browser app (Streamlit): draw + real-time prediction
-├── bestmodel.h5                # Saved trained model (< 1 MB)
-├── requirements.txt
+├── MNIST.ipynb               # Notebook: data prep, CNN architecture, training
+├── app.py                    # Desktop app (Pygame): draw + real-time prediction
+├── streamlit_app.py          # Browser app (Streamlit): draw + real-time prediction
+├── bestmodel.h5              # Saved trained CNN weights (~440 KB)
+├── requirements.txt          # Local install (includes pygame)
+├── requirements-cloud.txt    # Streamlit Cloud install (excludes pygame)
+├── .python-version           # Pins Python 3.11 for Streamlit Cloud
 ├── assets/
-│   └── demo-screenshot.png
-└── README.md
+│   └── demo-screenshot.png   # Demo image shown in README
+└── LICENSE                   # MIT
 ```
 
 ---
 
 ## ⚙️ Installation & Usage
 
+### Local Setup
+
 ```bash
 # Clone the repo
 git clone https://github.com/suyashsahu00/digit-recognizer-pygame-cnn.git
 cd digit-recognizer-pygame-cnn
 
-# Install dependencies
+# Install all dependencies (includes pygame for the desktop app)
 pip install -r requirements.txt
+```
 
-# Option A: run the desktop app (Pygame)
+### Option A — Desktop App (Pygame)
+
+```bash
 python app.py
+```
 
-# Option B: run the browser app (Streamlit)
+**Controls:**
+- **Left-click + drag** to draw a digit
+- **Release mouse** → prediction appears next to your drawing
+- **`N` key** → clear the canvas for the next digit
+- Close the window to quit
+
+### Option B — Browser App (Streamlit)
+
+```bash
 streamlit run streamlit_app.py
 ```
 
-**Pygame app controls:**
+Then open `http://localhost:8501` in your browser.
 
-- Draw with your mouse (left-click and drag)
-- Release the mouse to see the prediction
-- Press `N` to clear the board
-- Close the window to quit
+**Controls:**
+- Draw one digit on the black canvas
+- Prediction and confidence % appear instantly in the right panel
+- Click **🗑️ Clear Canvas** before drawing the next digit
 
-**Streamlit app controls:**
+> **Important:** This is a single-digit classifier. Always clear between digits — drawing multiple digits at once will produce incorrect predictions.
 
-- Draw directly on the canvas in your browser
-- Prediction and confidence % update automatically after each stroke
-- Use the trash/reset icon on the canvas toolbar to clear it
+### Streamlit Cloud Deployment
+
+This app is deployed at [digit-recognizer-pygame-cnn.streamlit.app](https://digit-recognizer-pygame-cnn.streamlit.app/).
+
+- Uses `requirements-cloud.txt` (excludes `pygame`, which isn't available on headless cloud environments)
+- Uses `.python-version` to pin **Python 3.11** (TensorFlow doesn't yet support Python 3.13+)
 
 ---
 
@@ -137,11 +151,10 @@ streamlit run streamlit_app.py
 | Test Accuracy    | 99.13% |
 | Test Loss        | 0.0513 |
 | Total Parameters | 34,826 |
-
-*(A confusion matrix image would still strengthen this section — much more convincing than a single accuracy number, and easy to generate with `sklearn.metrics.confusion_matrix` + `seaborn.heatmap` on your test predictions.)*
+| Model Size       | ~440 KB |
 
 ---
 
 ## 📄 License
 
-*(Choose one — MIT is the common default for portfolio ML projects. State it here and add a LICENSE file.)*
+MIT — see [LICENSE](LICENSE).

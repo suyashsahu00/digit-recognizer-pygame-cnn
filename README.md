@@ -10,9 +10,7 @@ A deep learning project that trains a Convolutional Neural Network on the MNIST 
 
 Add a few screenshots of both interfaces in action below, and/or link a short demo video (e.g. uploaded to YouTube) to show the live drawing + prediction working.
 
-```
 ![demo](assets/demo-screenshot.png)
-```
 
 📺 **Demo video:** *(add your YouTube link here)*
 

@@ -78,10 +78,21 @@ while True:
                     image_cnt += 1
 
                 if PREDICT:
-                    # Process and normalize image to fit MNIST dataset dimensions (28x28)
-                    image = cv2.resize(img_arr, (28, 28))
-                    image = np.pad(image, (10, 10), 'constant', constant_values=0)
-                    image = cv2.resize(image, (28, 28)) / 255.0
+                    # Pad to square BEFORE resizing — preserves digit aspect ratio to match MNIST
+                    img_h, img_w = img_arr.shape
+                    diff = abs(img_h - img_w)
+                    if img_h > img_w:
+                        pad_left = diff // 2
+                        pad_right = diff - pad_left
+                        img_arr = np.pad(img_arr, ((0, 0), (pad_left, pad_right)), 'constant', constant_values=0)
+                    elif img_w > img_h:
+                        pad_top = diff // 2
+                        pad_bot = diff - pad_top
+                        img_arr = np.pad(img_arr, ((pad_top, pad_bot), (0, 0)), 'constant', constant_values=0)
+
+                    # Add small border, then resize to 28x28 and normalize
+                    img_arr = np.pad(img_arr, 8, 'constant', constant_values=0)
+                    image = cv2.resize(img_arr, (28, 28)) / 255.0
                     
                     # Model expects shape (1, 28, 28, 1)
                     predictions = MODEL.predict(image.reshape(1, 28, 28, 1))

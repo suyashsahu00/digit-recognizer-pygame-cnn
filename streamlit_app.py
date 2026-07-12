@@ -29,7 +29,7 @@ canvas_result = st_canvas(
     stroke_color="#FFFFFF",
     background_color="#000000",
     height=300,
-    width=700,
+    width=900,
     drawing_mode="freedraw",
     key="canvas",
 )
@@ -59,10 +59,22 @@ if canvas_result.image_data is not None:
             
             cropped = gray[y_min:y_max, x_min:x_max]
             
-            # Process image to match training input (28x28 resize -> padding -> resize -> normalize)
-            resized = cv2.resize(cropped, (28, 28))
-            padded = np.pad(resized, (10, 10), 'constant', constant_values=0)
-            final_image = cv2.resize(padded, (28, 28)) / 255.0
+            # Pad cropped region to be SQUARE before resizing
+            # This preserves aspect ratio and matches square MNIST digits
+            crop_h, crop_w = cropped.shape
+            diff = abs(crop_h - crop_w)
+            if crop_h > crop_w:
+                pad_left = diff // 2
+                pad_right = diff - pad_left
+                cropped = np.pad(cropped, ((0, 0), (pad_left, pad_right)), 'constant', constant_values=0)
+            elif crop_w > crop_h:
+                pad_top = diff // 2
+                pad_bot = diff - pad_top
+                cropped = np.pad(cropped, ((pad_top, pad_bot), (0, 0)), 'constant', constant_values=0)
+            
+            # Add a small border margin, then resize to 28x28 and normalize
+            cropped = np.pad(cropped, 8, 'constant', constant_values=0)
+            final_image = cv2.resize(cropped, (28, 28)) / 255.0
             
             # Reshape to Keras batch format (1, 28, 28, 1)
             final_image = final_image.reshape(1, 28, 28, 1)

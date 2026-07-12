@@ -6,7 +6,7 @@ import cv2
 import os
 
 # Set up page layout and design
-st.set_page_config(page_title="Digit Recognizer", layout="centered")
+st.set_page_config(page_title="Digit Recognizer", layout="wide")
 st.title("🖌️ Handwritten Digit Recognizer")
 st.write("Draw a digit (0-9) inside the black box below and the model will predict it in real-time!")
 
@@ -28,8 +28,8 @@ canvas_result = st_canvas(
     stroke_width=14,
     stroke_color="#FFFFFF",
     background_color="#000000",
-    height=620,
-    width=1200,
+    height=350,
+    width=1000,
     drawing_mode="freedraw",
     key="canvas",
 )

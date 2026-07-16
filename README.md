@@ -10,6 +10,8 @@ A deep learning project that trains a **Convolutional Neural Network on MNIST** 
 
 ## 🎥 Demo
 
+**Video Demo:** [Watch on LinkedIn](https://www.linkedin.com/posts/suyashsahu123_machinelearning-deeplearning-cnn-activity-7483440509844103168-7-yd?utm_source=share&utm_medium=member_desktop&rcm=ACoAAELgUqwB07_NVmdE7eCapPcL00UVsL3BZL4)
+
 ![demo](assets/demo-screenshot.png)
 
 ---
